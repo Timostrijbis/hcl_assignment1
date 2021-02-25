@@ -39,10 +39,11 @@ class commentTreeDisplay(tk.Frame):
         reddit = praw.Reddit(client_id='c1yvNSnNWly4Vw', client_secret = 'ECRVW8UyW8IikP3o6xF_ojut120HoQ', user_agent = 'assignment1')
         
         URL = self.E1.get()
-        submission = reddit.submission(url=URL)
+        submission = reddit.submission(url=URL) 
         submission.comments.replace_more(limit=None)
         for comment in submission.comments.list():
-            self.text.insert(tk.END, comment.body)
+            comment_no_emoji = comment.body.encode('ascii','ignore').decode()
+            self.text.insert(tk.END, comment_no_emoji)
             
     def URL_getter(self):
         newframe = tk.Toplevel(self)
