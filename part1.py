@@ -1,6 +1,5 @@
 #part1.py
 #This program displays a stream of newly posted submissions
-#Priscilla Postma s2891131
 
 import tkinter as tk; import tkinter.ttk as ttk;import requests;import praw;
 import threading;import queue;import time; from prawcore import NotFound;import os
@@ -14,6 +13,7 @@ class Application(tk.Frame):
         self.initializeGUI()
         self.root.after(1, self.updateGUI)
         self.displayStatus("Streaming most recent submissions")
+        self.showList("")
         self.scaleBar()
         self.reddit = praw.Reddit(client_id='QsDn3NogZO65jg',
                                   client_secret='BM2qzMdnQODzGW054E_WtwTF-94Zvg',
@@ -37,6 +37,10 @@ class Application(tk.Frame):
         self.exit_button = tk.Button(self.root, text="Close", command=self.exitProgram)
         self.exit_button.grid(row=2, column=2)
 
+        #Define modify black/whitelist button
+        self.tosswl_button = tk.Button(self.root, text="Clear whitelist", command=self.clearW)
+        self.tossbl_button = tk.Button(self.root, text= "Clear blacklist", command=self.clearB)
+
         # Define checkboxes for either black-or whitelist
         self.varwl = tk.IntVar()
         self.varbl = tk.IntVar()
@@ -55,6 +59,18 @@ class Application(tk.Frame):
         self.tree.grid(row=5, columnspan=4, sticky='nsew')
         self.treeview = self.tree
 
+    def clearW(self):
+        self.tosswl_button.grid_forget()
+        self.data.displaylist = ""
+        self.data.whitelist = []
+        self.showList("Whitelist cleared")
+
+    def clearB(self):
+        self.tossbl_button.grid_forget()
+        self.data.displaylist = ""
+        self.data.blacklist = []
+        self.showList("Blacklist cleared")
+
     def pause(self):
         self.displayStatus("PAUSED, press 'resume' to continue")
         self.button.pauseButton()
@@ -69,24 +85,23 @@ class Application(tk.Frame):
 
     # Checkboxes for adding white or blacklist
     def readCheckboxes(self):
-        self.l = tk.Label(self.root, bg='white', width=30, text='')
-        self.l.grid(row=0, column=3)
         if self.varwl.get() == 1:
-            self.l.config(text='Add a subreddit to your whitelist')
-            self.input = tk.Entry(self.root)
-            self.input.grid(row=1, column=3)
-            self.buttonwl = tk.Button(text="Show this subreddit", command=self.getInputclearScreen)
-            self.buttonwl.grid(row=2,column=3)
             self.c2.grid_forget()
+            self.c1.grid_forget()
+            self.input = tk.Entry(self.root)
+            self.input.grid(row=1, column=0)
+            self.buttonwl = tk.Button(text="Show this subreddit", command=self.getInputclearScreen)
+            self.buttonwl.grid(row=1,column=1)
+            self.showList("Add a subreddit to your whitelist")
             
         elif self.varbl.get() == 1:
-            self.l.config(text='Exclude a subreddit')
+            #self.l.config(text='Exclude a subreddit')
             self.input = tk.Entry(self.root)
-            self.input.grid(row=1, column=3)
+            self.input.grid(row=1, column=0)
             self.buttonbl = tk.Button(text="Don't show this subreddit", command=self.getInputclearScreen)
-            self.buttonbl.grid(row=2, column=3)
+            self.buttonbl.grid(row=1, column=1)
             self.c1.grid_forget()
-
+            self.c2.grid_forget()
 
     # Clear screen after input for either white or blacklist is received
     def getInputclearScreen(self):
@@ -95,20 +110,28 @@ class Application(tk.Frame):
             self.data.appendtoWL(userinput)
             self.pause_button.grid_forget()
             self.resume_button.grid_forget()
-            self.displayStatus("Streaming '"+userinput+"' subreddit")
+            self.showList("Whitelisted: " + self.data.displaylist)
+            self.tosswl_button.grid(row=1,column=3)
+            self.input.delete(0, "end")
         elif self.varbl.get() == 1 and self.data.sub_exists(userinput):
             self.data.appendtoBL(userinput)
-            self.displayStatus("Excluded '"+userinput+"'")
-
+            self.showList("Excluded: " + self.data.displaylist)
+            self.tossbl_button.grid(row=1, column=3)
+            self.input.delete(0, "end")
         elif not self.data.sub_exists(userinput):
             self.input.delete(0,"end")
-            self.displayStatus("Subreddit does not exist!! Try again")
+            self.showList("Subreddit does not exist!! Try again")
 
     # Top left blue bar displays updates when called
     def displayStatus(self,status):
         self.status = status
         self.label = tk.Label(self.root, fg="white", bg="blue", text=self.status,width=30, height=2)
-        self.label.grid(row=0, column=0,padx=1, pady=1)
+        self.label.grid(row=0, column=0)
+
+    def showList(self, list):
+        self.list = list
+        self.label = tk.Label(self.root, fg="white", bg="red",text=self.list, width=50, height=2)
+        self.label.grid(row=0, column=3)
 
     # Scalebar for adjusting streaming speed
     def scaleBar(self):
@@ -145,6 +168,7 @@ class Data:
         self.whitelist = []
         self.blacklist = []
         self.button = button
+        self.displaylist = ""
 
     # Check if subreddit entered exists and return
     def sub_exists(self, sub):
@@ -162,21 +186,26 @@ class Data:
     # Define behavior in case of a whitelist item
     def appendtoWL(self,input):
         self.whitelist.append(input.lower())
+        self.displaylist = self.displaylist+ input +", "
+
+    def clearWL(self):
+        self.whitelist = []
         print(self.whitelist)
 
     # Define behaviour in case of a blacklist item
     def appendtoBL(self,input):
         self.blacklist.append(input)
         self.button.blacklistButtonOn()
+        self.displaylist = self.displaylist+ input +", "
 
     # Checks conditions in which to stream in
     def whiteAndblackList(self):
         if self.blacklist:
             total = "all"
-            for item in self.blacklist: #ingericht op meerdere items, start voor elke een thread
+            for item in self.blacklist:
                 total = total+"-"+item
             threading.Thread(target=self.getData, args=(total,)).start()
-        elif not self.blacklist: #if there is no blacklist: stream all
+        elif not self.blacklist:
             threading.Thread(target=self.getData, args=('all',)).start()
 
     # provide queue to class App
@@ -204,7 +233,7 @@ class Data:
                 self.button.blacklistButtonOff()
                 self.whiteAndblackList()
                 break
-            title = submission.title.encode('ascii','ignore').decode() #Emojis verwijderd vanwege vastlopen
+            title = submission.title.encode('ascii','ignore').decode()
             subreddit = submission.subreddit.display_name.lower()
             if self.whitelist:
                 if subreddit in self.whitelist:
@@ -230,7 +259,7 @@ class Button:
     def blacklistButtonOn(self):
         self.blacklistPressed=True
 
-    def blacklistButtonzOff(self):
+    def blacklistButtonOff(self):
         self.blacklistPressed=False
 
 def main():
