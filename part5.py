@@ -88,23 +88,18 @@ class Notebook(tk.Frame):
 
         # This is the stuff for the commentframe, you don't need to do anything with this
         self.commentframe = tk.Frame(self.topframe)
-        self.scaleBar()
+
         self.n = ttk.Notebook(self.commentframe)
         self.n.pack()
-        self.f1 = ttk.Frame(self.n)
-        self.n.add(self.f1, text="Post titles")
-        self.tree = ttk.Treeview(self.f1, columns=('Name'))
-        self.tree.grid(row=5, columnspan=1, sticky='nsew')
         self.treeview = self.tree
         self.iid = 0
-        self.treeview.bind('<Double-1>', self.clicked)
+        self.treeview.bind('<Double-1>', self.get_title_tab)
         self.URL = 'test'
 
         self.titleframe.pack(side=tk.LEFT)
         self.commentframe.pack(side=tk.RIGHT)
         self.topframe.pack()
 
-        # Here is room for your functions
         #/////// part1 functions ///////
     def clearW(self):
         self.tosswl_button.grid_forget()
@@ -130,6 +125,7 @@ class Notebook(tk.Frame):
     # Exit behaviour
     def exitProgram(self):
         os._exit(1)
+
 
         # Checkboxes for adding white or blacklist
     def readCheckboxes(self):
@@ -208,35 +204,52 @@ class Notebook(tk.Frame):
         self.L1.pack(side="left")
         self.E1 = tk.Entry(newframe, bd=5)
         self.E1.pack(side="left")
-        self.B1 = tk.Button(newframe, text="Show comments", command=self.showComments)
+        self.B1 = tk.Button(newframe, text="Show comments", command=self.make_new_tab)
         self.B1.pack(side="right")
 
-    def showComments(self):
+    def make_new_tab(self):
         self.URL = self.E1.get()
         self.submission = self.reddit.submission(url=self.URL)
         self.submission.comments.replace_more(limit=None)
+        self.frame = ttk.Frame(self.n)
+        if len(self.submission.title) > 15:
+            self.submission.title = self.submission.title[0:12]+ "..."
+        self.n.add(self.frame, text = self.submission.title)
+        self.newtree = ttk.Treeview(self.frame, columns=('Name'))
+        self.newtree.grid(row=5, columnspan=1, sticky='nsew')
+        self.newtreeview = self.newtree
+        self.newiid = 0
+        self.newtreeview.bind('<Double-1>', self.clicked)
+        self.showComments2()
+
+    def showComments2(self):
         for comment in self.submission.comments.list():
-            comment_no_emoji = comment.body.encode('ascii', 'ignore').decode()
-            self.treeview.insert('', '0', iid=comment.id, text=comment.id, values=([comment_no_emoji]))
+            comment_no_emoji = comment.body.encode('ascii','ignore').decode()
+            self.newtreeview.insert('', '0', iid=comment.id, text=comment.id, values=([comment_no_emoji]))
+        x = threading.Thread(target=self.comment_update, daemon=True)
+        x.start()
 
-    def clicked(self, event):
-        tv = self.treeview
-        self.promptcomment = tv.item(tv.selection())['values'][0]
-        self.commentid = tv.item(tv.selection())['text']
-        self.comment()
 
-    def comment(self):
-        commenttorespondto = self.reddit.comment(id=self.commentid)
-        comment_prompt = simpledialog.askstring(title="Comment prompt",
-                                                prompt="Comment to: /////" + self.promptcomment + "///// ")
-        if comment_prompt:
-            commenttorespondto.reply(comment_prompt)
-            print("You commented: " + comment_prompt)
 
-        elif not comment_prompt:
-            again = simpledialog.askstring(title="Comment to this", prompt="Cannot be empty")
-            if again:
-                print("You commented: " + again)
+    def get_title_tab(self, event):
+        new_url = "https://www.reddit.com/r/memes/comments/lz7ral/jr_of_jars/"
+        self.make_new_tab_2(new_url)
+
+
+    def make_new_tab_2(self, new_url):
+        self.URL = new_url
+        self.submission = self.reddit.submission(url=self.URL)
+        self.submission.comments.replace_more(limit=None)
+        self.frame = ttk.Frame(self.n)
+        if len(self.submission.title) > 15:
+            self.submission.title = self.submission.title[0:12]+ "..."
+        self.n.add(self.frame, text = self.submission.title)
+        self.newtree = ttk.Treeview(self.frame, columns=('Name'))
+        self.newtree.grid(row=5, columnspan=1, sticky='nsew')
+        self.newtreeview = self.newtree
+        self.newiid = 0
+        self.showComments2()
+
 
     def scaleBar(self):
         self.scale = tk.Scale(self.commentframe, orient="horizontal", resolution=1,
@@ -245,39 +258,14 @@ class Notebook(tk.Frame):
         self.scale_label = tk.Label(self.commentframe, text="Refresh speed: 10sec   20sec   1min")
         self.scale_label.pack()
 
-    # Return status of scale
-    def scaleBarStatus(self,val):
-        self.status = val
+
+    def scaleBarStatus(self):
+        self.status = self.scale.get()
         return self.status
 
-        # Checks for new comment, updates treeview if there are any, then sleeps for a time selected in the scalebar
 
-    def comment_update(self):
-        while True:
-            # If there is no reddit URL given, this function does nothing
-            if self.URL == 'test':
-                pass
-            # Once a reddit URL is given, it checks for new comments
-            else:
-                new_comments = ''
-                self.submission = self.reddit.submission(url=self.URL)
-                self.submission.comments.replace_more(limit=None)
-                for comment in self.submission.comments.list():
-                    if comment in self.tree.get_children():
-                        pass
-                    else:
-                        new_comments = comment
-                # If there are new comments, the treeview gets updated, by deleting old comments and running showComments()
-                if new_comments != '':
-                    self.tree.delete(*self.tree.get_children())
-                    commentTreeDisplay.showComments(self)
 
-                if self.status == 1:
-                    time.sleep(10)
-                elif self.status == 2:
-                    time.sleep(20)
-                elif self.status == 3:
-                    time.sleep(60)
+
 
 class Data:
 
@@ -293,6 +281,7 @@ class Data:
         self.blacklist = []
         self.button = button
         self.displaylist = ""
+        self.scaleSpeed = 1
 
     # Check if subreddit entered exists and return
     def sub_exists(self, sub):
@@ -391,8 +380,6 @@ def main():
     data = Data(button)
     start = Notebook(tk.Tk(), data, button)
     data.startGettingData()
-    x = threading.Thread(target=start.comment_update, daemon=True)
-    x.start()
     start.mainloop()
 
 
