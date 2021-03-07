@@ -1,6 +1,3 @@
-#part3.py
-#This program allows to respond on a comment of a certain thread in Reddit
-
 import tkinter as tk
 from tkinter import *
 from functools import partial
@@ -29,12 +26,13 @@ class ResponseCommentTreeDisplay(commentTreeDisplay):
 
     def comment(self):
         commenttorespondto = self.reddit.comment(id=self.commentid)
-        comment_prompt = simpledialog.askstring(title = "Comment prompt", prompt = "Comment to: /////" +self.promptcomment+ "///// ")
+        comment_prompt = simpledialog.askstring(title="Comment prompt",
+                                                prompt="Comment to: /////" + self.promptcomment + "///// ")
         if comment_prompt:
             commenttorespondto.reply(comment_prompt)
 
         elif not comment_prompt:
-            comment_prompt = simpledialog.askstring(title = "Comment to this", prompt = "Field can't be empty, try again.")
+            comment_prompt = simpledialog.askstring(title="Comment to this", prompt="Field can't be empty, try again.")
             if comment_prompt:
                 commenttorespondto.reply(comment_prompt)
             if not comment_prompt:
@@ -43,7 +41,7 @@ class ResponseCommentTreeDisplay(commentTreeDisplay):
 
 def main():
     root = Tk()
-    root.title("Comments, double-click to respond")
+    root.title("Comments")
 
     rt = ResponseCommentTreeDisplay(root)
     rt.pack()
