@@ -81,7 +81,7 @@ class Application(tk.Frame):
         self.data.startGettingData()
     # Exit behaviour
     def exitProgram(self):
-        os._exit(1)
+        exit()
 
     # Checkboxes for adding white or blacklist
     def readCheckboxes(self):
@@ -181,7 +181,7 @@ class Data:
 
     # Start thread and check for conditions to start with
     def startGettingData(self):
-        threading.Thread(target=self.whiteAndblackList).start()
+        threading.Thread(target=self.whiteAndblackList, daemon=True).start()
 
     # Define behavior in case of a whitelist item
     def appendtoWL(self,input):
@@ -204,9 +204,9 @@ class Data:
             total = "all"
             for item in self.blacklist:
                 total = total+"-"+item
-            threading.Thread(target=self.getData, args=(total,)).start()
+            threading.Thread(target=self.getData, daemon=True, args=(total,)).start()
         elif not self.blacklist:
-            threading.Thread(target=self.getData, args=('all',)).start()
+            threading.Thread(target=self.getData, daemon=True, args=('all',)).start()
 
     # provide queue to class App
     def shareQueue(self):
