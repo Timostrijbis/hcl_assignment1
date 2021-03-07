@@ -177,6 +177,7 @@ class Notebook(tk.Frame):
         self.label = tk.Label(self.titleframe, fg="white", bg="red", text=self.list, width=50, height=2)
         self.label.grid(row=0, column=3)
 
+    # Make a scalebar for the streaming speed of submission titles
     def scaleBar1(self):
         self.scale = tk.Scale(self.titleframe, orient="horizontal", resolution=1,
                               from_=1, to=3, showvalue=0, command=self.setScaleStatus1)
@@ -198,6 +199,7 @@ class Notebook(tk.Frame):
             pass
         self.titleframe.after(1, self.updateGUI)
 
+    # Make a new frame, in which users can input a url. When they click the button, they get that submissions comments
     def URL_getter(self):
         newframe = tk.Toplevel(self)
         self.L1 = tk.Label(newframe, text="Insert Reddit URL here: ")
@@ -207,6 +209,7 @@ class Notebook(tk.Frame):
         self.B1 = tk.Button(newframe, text="Show comments", command=self.make_new_tab)
         self.B1.pack(side="right")
 
+    # This function makes a new tab in notebook. The title is the submission title.
     def make_new_tab(self):
         self.URL = self.E1.get()
         self.submission = self.reddit.submission(url=self.URL)
@@ -219,23 +222,20 @@ class Notebook(tk.Frame):
         self.newtree.grid(row=5, columnspan=1, sticky='nsew')
         self.newtreeview = self.newtree
         self.newiid = 0
-        self.newtreeview.bind('<Double-1>', self.clicked)
         self.showComments2()
 
+    # Fills the new notebook tab with comments
     def showComments2(self):
         for comment in self.submission.comments.list():
             comment_no_emoji = comment.body.encode('ascii','ignore').decode()
             self.newtreeview.insert('', '0', iid=comment.id, text=comment.id, values=([comment_no_emoji]))
-        x = threading.Thread(target=self.comment_update, daemon=True)
-        x.start()
 
-
-
+    # When the title of a submission is double clicked, this will start the process to make a noteboo tab. for that title
     def get_title_tab(self, event):
         new_url = "https://www.reddit.com/r/memes/comments/lz7ral/jr_of_jars/"
         self.make_new_tab_2(new_url)
 
-
+    # This function makes a new tab in notebook. The title is the submission title.
     def make_new_tab_2(self, new_url):
         self.URL = new_url
         self.submission = self.reddit.submission(url=self.URL)
@@ -249,23 +249,6 @@ class Notebook(tk.Frame):
         self.newtreeview = self.newtree
         self.newiid = 0
         self.showComments2()
-
-
-    def scaleBar(self):
-        self.scale = tk.Scale(self.commentframe, orient="horizontal", resolution=1,
-                              from_=1, to=3, showvalue=0, command=self.scaleBarStatus)
-        self.scale.pack()
-        self.scale_label = tk.Label(self.commentframe, text="Refresh speed: 10sec   20sec   1min")
-        self.scale_label.pack()
-
-
-    def scaleBarStatus(self):
-        self.status = self.scale.get()
-        return self.status
-
-
-
-
 
 class Data:
 
