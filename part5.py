@@ -8,7 +8,6 @@ import queue
 import time
 from prawcore import NotFound
 from tkinter import simpledialog
-import os
 
 
 #from part1 import Data as data
@@ -92,7 +91,6 @@ class Notebook(tk.Frame):
         self.n = ttk.Notebook(self.commentframe)
         self.n.pack()
         self.treeview = self.tree
-        self.iid = 0
         self.treeview.bind('<Double-1>', self.get_title_tab)
         self.URL = 'test'
 
@@ -124,8 +122,7 @@ class Notebook(tk.Frame):
 
     # Exit behaviour
     def exitProgram(self):
-        os._exit(1)
-
+        exit()
 
         # Checkboxes for adding white or blacklist
     def readCheckboxes(self):
@@ -230,15 +227,17 @@ class Notebook(tk.Frame):
             comment_no_emoji = comment.body.encode('ascii','ignore').decode()
             self.newtreeview.insert('', '0', iid=comment.id, text=comment.id, values=([comment_no_emoji]))
 
-    # When the title of a submission is double clicked, this will start the process to make a noteboo tab. for that title
+    # When the title of a submission is double clicked, this will start the process to make a notebook tab. for that title
     def get_title_tab(self, event):
-        new_url = "https://www.reddit.com/r/memes/comments/lz7ral/jr_of_jars/"
+        tv = self.treeview
+        id = tv.selection()[0]
+        new_url = id
         self.make_new_tab_2(new_url)
 
     # This function makes a new tab in notebook. The title is the submission title.
     def make_new_tab_2(self, new_url):
         self.URL = new_url
-        self.submission = self.reddit.submission(url=self.URL)
+        self.submission = self.reddit.submission(id=self.URL)
         self.submission.comments.replace_more(limit=None)
         self.frame = ttk.Frame(self.n)
         if len(self.submission.title) > 15:
@@ -277,7 +276,7 @@ class Data:
 
     # Start thread and check for conditions to start with
     def startGettingData(self):
-        threading.Thread(target=self.whiteAndblackList).start()
+        threading.Thread(target=self.whiteAndblackList, daemon=True).start()
 
     # Define behavior in case of a whitelist item
     def appendtoWL(self,input):
@@ -300,9 +299,9 @@ class Data:
             total = "all"
             for item in self.blacklist:
                 total = total+"-"+item
-            threading.Thread(target=self.getData, args=(total,)).start()
+            threading.Thread(target=self.getData, daemon=True, args=(total,)).start()
         elif not self.blacklist:
-            threading.Thread(target=self.getData, args=('all',)).start()
+            threading.Thread(target=self.getData, daemon=True, args=('all',)).start()
 
     # provide queue to class App
     def shareQueue(self):
